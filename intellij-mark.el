@@ -2,10 +2,16 @@
 
 ;; follow global mark ring size - https://www.gnu.org/software/emacs/manual/html_node/emacs/Global-Mark-Ring.html
 (defvar intellij-mark-ring-length 16 "Size of mark ring.")
-(defvar intellij-mark-ring-cmds
-  '(evil-mouse-drag-region
-    evil-goto-line)
-  "List of commands that push current cursor to the mark ring.")
+(defvar intellij-mark-ring-post-commands
+  '(mouse-set-point
+    goto-line
+    merlin-locate
+    merlin-locate-intf)
+  "List of post-commands that push current cursor to the mark ring.")
+(defvar intellij-mark-ring-pre-commands
+  '(merlin-locate
+    merlin-locate-intf)
+  "List of pre-commands that push current cursor to the mark ring.")
 
 (defvar intellij-mark-ring)
 (defvar intellij-mark-ring-pos)
@@ -69,8 +75,8 @@
       (prin1 (ring-ref intellij-mark-ring pos))
       (setq pos (+ pos 1)))))
       
-(defun intellij-mark-post-command-handler ()
-  (when (member this-command intellij-mark-ring-cmds)
+(defun intellij-mark-ring-command-handler (commands)
+  (when (member this-command commands)
     (push-mark-ring)))
 
 (defun intellij-mark-ring-prev ()
@@ -101,11 +107,13 @@
       (progn
         (setq intellij-mark-ring (make-ring intellij-mark-ring-length))
         (setq intellij-mark-ring-pos -1)
-	(add-hook 'post-command-hook 'intellij-mark-post-command-handler))
-    (remove-hook 'post-command-hook 'intellij-mark-post-command-handler)))
+	(add-hook 'pre-command-hook (lambda () (intellij-mark-ring-command-handler intellij-mark-ring-pre-commands)))
+	(add-hook 'post-command-hook (lambda () (intellij-mark-ring-command-handler intellij-mark-ring-post-commands))))
+    (remove-hook 'pre-command-hook (lambda () (intellij-mark-ring-command-handler intellij-mark-ring-pre-commands)))
+    (remove-hook 'post-command-hook (lambda () (intellij-mark-ring-command-handler intellij-mark-ring-post-commands)))))
 
-(global-set-key (kbd "M-b") 'intellij-mark-ring-prev)
-(global-set-key (kbd "M-f") 'intellij-mark-ring-next)
+(global-set-key (kbd "C-x ,") 'intellij-mark-ring-prev)
+(global-set-key (kbd "C-x .") 'intellij-mark-ring-next)
 
 (provide 'intellij-mark)
 
